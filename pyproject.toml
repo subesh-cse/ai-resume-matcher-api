@@ -1,0 +1,31 @@
+[project]
+name = "ai-resume-matcher"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.141.1",
+    "pwdlib[bcrypt]>=0.3.1",
+    "pydantic-settings>=2.15.0",
+    "pyjwt[crypto]>=2.15.1",
+    "pypdf>=6.16.2",
+    "python-dotenv>=1.2.3",
+    "python-multipart>=0.0.32",
+    "sentence-transformers>=6.0.1",
+    "sqlmodel>=0.0.42",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[project.scripts]
+ai-resume-matcher = "ai_resume_matcher:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]
