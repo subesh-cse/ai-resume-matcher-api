@@ -1,7 +1,10 @@
 import re
+import torch
 from typing import Set, Dict, Any
 from sentence_transformers import SentenceTransformer, util
 
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
 
 COMMON_SKILLS = {
     # Languages
