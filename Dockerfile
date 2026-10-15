@@ -1,18 +1,24 @@
 FROM python:3.12-slim-bookworm
 
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+ENV PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_SYSTEM_PYTHON=1 \
+    PORT=8000
 
 WORKDIR /app
 
-ENV UV_COMPILE_BYTECODE=1
-ENV PYTHONUNBUFFERED=1
 
 COPY pyproject.toml uv.lock ./
+RUN uv pip install --system -r pyproject.toml
+
 
 COPY app/ ./app
 
-ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
