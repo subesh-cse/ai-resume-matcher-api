@@ -16,28 +16,31 @@ COMMON_SKILLS = {
     "docker", "kubernetes", "aws", "gcp", "azure", "git", "github", "ci/cd", "linux", "rest", "graphql"
 }
 
-HF_API_URL = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
-HF_TOKEN = os.getenv("HF_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_EMBEDDING_URL = "https://api.openai.com/v1/embeddings"
 
 
 class HybridScoringEngine:
 
     @staticmethod
     async def get_embeddings(texts: List[str]) -> List[List[float]]:
-        headers = {}
-        if HF_TOKEN:
-            headers["Authorization"] = f"Bearer {HF_TOKEN}"
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        cleaned_texts = [t[:8000] for t in texts]
 
         payload = {
-            "inputs": texts,
-            "options": {"wait_for_model": True}
+            "model": "text-embedding-3-small",
+            "input": cleaned_texts
         }
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(HF_API_URL, headers=headers, json=payload)
+            response = await client.post(OPENAI_EMBEDDING_URL, headers=headers, json=payload)
             response.raise_for_status()
-            embeddings = response.json()
-            return embeddings
+            data = response.json()
+            return [item["embedding"] for item in data["data"]]
 
     @staticmethod
     def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
@@ -64,14 +67,11 @@ class HybridScoringEngine:
 
     @classmethod
     async def calculate_match(cls, resume_text: str, job_text: str) -> Dict[str, Any]:
-        
         embeddings = await cls.get_embeddings([resume_text, job_text])
-        
         
         cos_sim = cls.cosine_similarity(embeddings[0], embeddings[1])
         semantic_score = max(0.0, min(1.0, float(cos_sim)))
 
-        
         resume_skills = cls.extract_skills(resume_text)
         job_skills = cls.extract_skills(job_text)
 
