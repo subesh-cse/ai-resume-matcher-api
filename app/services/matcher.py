@@ -1,10 +1,8 @@
+import os
 import re
-import torch
-from typing import Set, Dict, Any
-from sentence_transformers import SentenceTransformer, util
-
-torch.set_num_threads(1)
-torch.set_num_interop_threads(1)
+import httpx
+import numpy as np
+from typing import Set, Dict, Any, List
 
 COMMON_SKILLS = {
     # Languages
@@ -18,15 +16,40 @@ COMMON_SKILLS = {
     "docker", "kubernetes", "aws", "gcp", "azure", "git", "github", "ci/cd", "linux", "rest", "graphql"
 }
 
+HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+HF_TOKEN = os.getenv("HF_TOKEN")
+
 
 class HybridScoringEngine:
-    _model = None
 
-    @classmethod
-    def get_model(cls) -> SentenceTransformer:
-        if cls._model is None:
-            cls._model = SentenceTransformer("all-MiniLM-L6-v2")
-        return cls._model
+    @staticmethod
+    async def get_embeddings(texts: List[str]) -> List[List[float]]:
+        headers = {}
+        if HF_TOKEN:
+            headers["Authorization"] = f"Bearer {HF_TOKEN}"
+
+        payload = {
+            "inputs": texts,
+            "options": {"wait_for_model": True}
+        }
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(HF_API_URL, headers=headers, json=payload)
+            response.raise_for_status()
+            embeddings = response.json()
+            return embeddings
+
+    @staticmethod
+    def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+        a = np.array(vec1, dtype=np.float32)
+        b = np.array(vec2, dtype=np.float32)
+        norm_a = np.linalg.norm(a)
+        norm_b = np.linalg.norm(b)
+
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+
+        return float(np.dot(a, b) / (norm_a * norm_b))
 
     @staticmethod
     def extract_skills(text: str) -> Set[str]:
@@ -40,12 +63,15 @@ class HybridScoringEngine:
         return found_skills
 
     @classmethod
-    def calculate_match(cls, resume_text: str, job_text: str) -> Dict[str, Any]:
-        model = cls.get_model()
-        embeddings = model.encode([resume_text, job_text], convert_to_tensor=True)
-        cos_sim = util.cos_sim(embeddings[0], embeddings[1]).item()
+    async def calculate_match(cls, resume_text: str, job_text: str) -> Dict[str, Any]:
+        
+        embeddings = await cls.get_embeddings([resume_text, job_text])
+        
+        
+        cos_sim = cls.cosine_similarity(embeddings[0], embeddings[1])
         semantic_score = max(0.0, min(1.0, float(cos_sim)))
 
+        
         resume_skills = cls.extract_skills(resume_text)
         job_skills = cls.extract_skills(job_text)
 
@@ -57,6 +83,7 @@ class HybridScoringEngine:
         else:
             skill_score = semantic_score
 
+        
         final_score = (0.6 * semantic_score) + (0.4 * skill_score)
         match_percentage = round(final_score * 100, 2)
 
