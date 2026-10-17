@@ -128,9 +128,9 @@ docker run -p 8000:8000 ai-resume-matcher
 
 ## Engineering Trade-offs & Decisions
 
-- **In-Memory vs. Filesystem Extraction:** PDF uploads are ingested as byte streams into `io.BytesIO` buffers. This eliminates local disk I/O bottlenecks and avoids orphaned temporary files in stateless container environments.
-- **Singleton ML Inference:** The `SentenceTransformer` model is initialized lazily and cached on the `HybridScoringEngine` instance, ensuring model weights are loaded into memory exactly once per worker process.
-- **Synchronous Database Operations:** Standard SQLModel session transactions are executed inside standard `def` routes, allowing FastAPI to delegate blocking database I/O to an internal threadpool rather than stalling the primary asynchronous event loop.
+- **In-Memory vs. Filesystem Extraction:** PDF uploads are ingested as byte streams into `io.BytesIO` buffers. This eliminates local disk I/O bottlenecks and avoids orphaned temporary files in st[...]
+- **Singleton ML Inference:** The `SentenceTransformer` model is initialized lazily and cached on the `HybridScoringEngine` instance, ensuring model weights are loaded into memory exactly once pe[...]
+- **Synchronous Database Operations:** Standard SQLModel session transactions are executed inside standard `def` routes, allowing FastAPI to delegate blocking database I/O to an internal threadpo[...]
 
 ---
 
@@ -139,3 +139,87 @@ docker run -p 8000:8000 ai-resume-matcher
 - [ ] Row-level access control (`user_id` foreign key association on resumes).
 - [ ] Database migration to managed PostgreSQL using Alembic.
 - [ ] Redis-backed token revocation denylist.
+
+---
+
+## Quick demo using the bundled Python script (no frontend required)
+
+If you don't want a frontend or don't know curl, you can use the included Python demo script to run the full flow: register, login, create a job, upload a PDF resume, and request a match.
+
+1) Start the API (same terminal):
+
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+2) Install the runtime dependency for the demo script (only httpx is required):
+
+```bash
+python -m pip install --user httpx
+```
+
+3) Run the demo script (replace the `--pdf-path` with a local PDF resume you have):
+
+```bash
+python scripts/demo.py \
+  --base-url http://127.0.0.1:8000 \
+  --email demo@example.com \
+  --password demo-password \
+  --pdf-path ./sample_resume.pdf \
+  --job-title "Software Engineer" \
+  --job-desc "3+ years Python, FastAPI, SQL" 
+```
+
+The script will print out the created user, tokens, resume id, job id, and the match response JSON.
+
+---
+
+## Manual API examples (for reference)
+
+If you later want to try curl or HTTPie, here are the main calls (these are optional — the Python script above automates everything):
+
+1) Register (JSON):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@example.com","password":"demo-password"}'
+```
+
+2) Obtain token (form data):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=demo@example.com&password=demo-password"
+```
+
+3) Create job (authenticated):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/jobs" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Software Engineer","description":"Python, FastAPI"}'
+```
+
+4) Upload resume (authenticated, multipart):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/resumes/upload" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -F "file=@./sample_resume.pdf;type=application/pdf"
+```
+
+5) Match (authenticated):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/match" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"resume_id": 1, "job_id": 1}'
+```
+
+---
+
+If you want, I can also add a Postman collection or an exported Insomnia file so you (or an interviewer) can import and run the requests with a GUI — say the word and I’ll add it.
