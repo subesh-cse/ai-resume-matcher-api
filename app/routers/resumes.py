@@ -11,7 +11,6 @@ router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
-
     try:
         reader = PdfReader(BytesIO(file_bytes))
         extracted_text = ""
@@ -29,9 +28,10 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
 
 @router.post("/upload", response_model=Resume, status_code=status.HTTP_201_CREATED)
 async def upload_resume(
-    file: UploadFile, session: Session = Depends(get_session), current_user: User = Depends(get_current_user),
+    file: UploadFile,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
-    
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -48,7 +48,11 @@ async def upload_resume(
         )
 
     
-    resume = Resume(filename=file.filename, extracted_text=extracted_text)
+    resume = Resume(
+        filename=file.filename,
+        extracted_text=extracted_text,
+        user_id=current_user.id,
+    )
     session.add(resume)
     session.commit()
     session.refresh(resume)
@@ -57,16 +61,33 @@ async def upload_resume(
 
 
 @router.get("/", response_model=list[Resume])
-def list_resumes(session: Session = Depends(get_session)):
-    resumes = session.exec(select(Resume)).all()
+def list_resumes(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    
+    statement = select(Resume).where(Resume.user_id == current_user.id)
+    resumes = session.exec(statement).all()
     return resumes
 
 
 @router.get("/{resume_id}", response_model=Resume)
-def get_resume(resume_id: int, session: Session = Depends(get_session)):
+def get_resume(
+    resume_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
     resume = session.get(Resume, resume_id)
     if not resume:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found"
         )
+
+    
+    if resume.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this resume.",
+        )
+
     return resume

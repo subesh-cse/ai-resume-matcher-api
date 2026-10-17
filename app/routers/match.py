@@ -22,6 +22,13 @@ async def match_resume_to_job(
             detail=f"Resume with id {payload.resume_id} not found."
         )
 
+    
+    if resume.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to use this resume for matching."
+        )
+
     job = session.get(JobDescription, payload.job_id)
     if not job:
         raise HTTPException(

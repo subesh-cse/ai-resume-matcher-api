@@ -1,12 +1,15 @@
 from collections.abc import Generator
 from sqlmodel import Session, SQLModel, create_engine
+from app.config import settings
+
+db_url = settings.DATABASE_URL
 
 
-SQLITE_FILE_NAME = "database.db"
-sqlite_url = f"sqlite:///{SQLITE_FILE_NAME}"
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-
-engine = create_engine(sqlite_url, echo=False, connect_args={"check_same_thread": False})
+connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
+engine = create_engine(db_url, echo=False, connect_args=connect_args)
 
 
 def create_db_and_tables():
