@@ -1,4 +1,6 @@
-# AI Resume Matcher API 🚀
+# AI Resume Matcher API
+
+🚀 **Live API Docs:** [https://ai-resume-matcher-api-wrqd.onrender.com/docs](https://ai-resume-matcher-api-wrqd.onrender.com/docs)
 
 An asynchronous, production-grade microservice built with **FastAPI**, **SQLModel**, and **PostgreSQL** that evaluates candidate resumes against job descriptions. It leverages a **Hybrid Scoring Engine** combining high-dimensional dense vector semantics via OpenAI embeddings with deterministic regex skill extraction.
 
