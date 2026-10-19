@@ -13,6 +13,7 @@ class Resume(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     filename: str
     extracted_text: str
+    embedding: Optional[List[float]] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: int = Field(foreign_key="user.id", index=True)
 
@@ -21,6 +22,7 @@ class JobDescription(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
     description: str
+    embedding: Optional[List[float]] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -37,7 +39,7 @@ class MatchResult(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-# --- Schemas / DTOs ---
+
 class UserCreate(SQLModel):
     email: str
     password: str

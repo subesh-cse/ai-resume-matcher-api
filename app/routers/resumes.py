@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Resume, User
 from app.routers.auth import get_current_user
+from app.services.matcher import HybridScoringEngine
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
@@ -47,10 +48,13 @@ async def upload_resume(
             detail="Could not extract any readable text from the uploaded PDF.",
         )
 
+    embeddings = await HybridScoringEngine.get_embeddings([extracted_text])
+    resume_embedding = embeddings[0] if embeddings else None
     
     resume = Resume(
         filename=file.filename,
         extracted_text=extracted_text,
+        embedding=resume_embedding,
         user_id=current_user.id,
     )
     session.add(resume)

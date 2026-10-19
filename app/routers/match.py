@@ -45,7 +45,9 @@ async def match_resume_to_job(
 
     result = await HybridScoringEngine.calculate_match(
         resume_text=resume.extracted_text,
-        job_text=job.description
+        job_text=job.description,
+        resume_embedding=resume.embedding,
+        job_embedding=job.embedding,
     )
 
     match_record = MatchResult(
@@ -69,7 +71,6 @@ def get_match_history(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    
     statement = (
         select(MatchResult)
         .where(MatchResult.user_id == current_user.id)

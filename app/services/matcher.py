@@ -2,7 +2,7 @@ import os
 import re
 import httpx
 import numpy as np
-from typing import Set, Dict, Any, List
+from typing import Set, Dict, Any, List, Optional
 
 COMMON_SKILLS = {
     # Languages
@@ -66,10 +66,22 @@ class HybridScoringEngine:
         return found_skills
 
     @classmethod
-    async def calculate_match(cls, resume_text: str, job_text: str) -> Dict[str, Any]:
-        embeddings = await cls.get_embeddings([resume_text, job_text])
-        
-        cos_sim = cls.cosine_similarity(embeddings[0], embeddings[1])
+    async def calculate_match(
+        cls,
+        resume_text: str,
+        job_text: str,
+        resume_embedding: Optional[List[float]] = None,
+        job_embedding: Optional[List[float]] = None,
+    ) -> Dict[str, Any]:
+        if not resume_embedding:
+            res_emb = await cls.get_embeddings([resume_text])
+            resume_embedding = res_emb[0]
+
+        if not job_embedding:
+            jb_emb = await cls.get_embeddings([job_text])
+            job_embedding = jb_emb[0]
+
+        cos_sim = cls.cosine_similarity(resume_embedding, job_embedding)
         semantic_score = max(0.0, min(1.0, float(cos_sim)))
 
         resume_skills = cls.extract_skills(resume_text)
@@ -83,7 +95,6 @@ class HybridScoringEngine:
         else:
             skill_score = semantic_score
 
-        
         final_score = (0.6 * semantic_score) + (0.4 * skill_score)
         match_percentage = round(final_score * 100, 2)
 
