@@ -33,8 +33,8 @@ class MatchResult(SQLModel, table=True):
     resume_id: int = Field(foreign_key="resume.id", index=True)
     job_id: int = Field(foreign_key="jobdescription.id", index=True)
     match_score: float
-    matched_skills: List[str] = Field(default=[], sa_column=Column(JSON))
-    missing_skills: List[str] = Field(default=[], sa_column=Column(JSON))
+    matched_skills: List[str] = Field(default_factory=list, sa_column=Column(JSON))
+    missing_skills: List[str] = Field(default_factory=list, sa_column=Column(JSON))
     summary: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
