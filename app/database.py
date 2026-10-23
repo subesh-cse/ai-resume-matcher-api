@@ -10,7 +10,13 @@ elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+")
     db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
-engine = create_engine(db_url, echo=False, connect_args=connect_args)
+engine = create_engine(
+    db_url,
+    echo=False,
+    connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 
 
 def create_db_and_tables():
