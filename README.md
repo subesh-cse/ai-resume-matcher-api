@@ -12,7 +12,7 @@ An asynchronous, production-grade microservice built with **FastAPI**, **SQLMode
 * **60/40 Hybrid Scoring Algorithm:**
   $$\text{Score} = (0.60 \times \text{Semantic Vector Similarity}) + (0.40 \times \text{Keyword Overlap Ratio})$$
 * **Multi-Tenant Security & Isolation:** Full OAuth2 password bearer authentication with bcrypt password hashing. Users can only access, query, and evaluate their own uploaded resumes and audit histories.
-* **Auto-Migrating Database Lifecycle:** Automatically executes idempotent startup schema migrations on deployment environments (such as Render) to ensure structural synchronization across database tables.
+* **Automated Schema Provisioning:** Idempotently initializes database tables on container startup to ensure zero-touch environment setup.
 * **Modern High-Performance Containerization:** Multi-stage build leveraging Astral's standalone `uv` binary on `python:3.12-slim-bookworm` with pre-compiled bytecode for lightning-fast container startups and minimal image footprints.
 
 ---
