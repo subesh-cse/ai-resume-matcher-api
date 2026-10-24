@@ -52,7 +52,7 @@ flowchart TD
 * **Vector Math & Science:** NumPy
 * **Async Network Client:** HTTPX
 * **Security & Auth:** PyJWT, Passlib (Bcrypt)
-* **Document Processing:** PyPDF / PDFPlumber
+* **Document Processing:** PyPDF
 * **Containerization & Deployment:** Docker, Render PaaS
 
 ---
